@@ -22,14 +22,22 @@ const Register = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting registration with:', email, name);
+      console.log('[Register] Attempting registration with:', email, name);
       const authState = await authService.register(email, password, name);
-      console.log('Registration successful:', authState);
+      console.log('[Register] Registration successful:', authState);
+      
+      // Dispatch to Redux
       dispatch(setAuth(authState));
-      toast.success('Registration successful! You can now login.');
-      navigate('/auth/login');
+      console.log('[Register] Auth state dispatched to Redux');
+      toast.success('Registration successful! Logging you in...');
+      
+      // Small delay to ensure state is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('[Register] Navigating to home page');
+      navigate('/', { replace: true });
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('[Register] Registration error:', error);
       toast.error(error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);

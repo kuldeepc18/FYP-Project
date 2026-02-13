@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { adminApiClient, ADMIN_API_ENDPOINTS } from "@/config/api";
 
 interface AdminUser {
@@ -10,58 +10,101 @@ interface AdminUser {
 interface AdminAuthContextType {
   admin: AdminUser | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
 interface LoginResponse {
   token: string;
-  user: {
+  admin: {
+    id: string;
     email: string;
     name: string;
+    role: string;
   };
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [admin, setAdmin] = useState<AdminUser | null>(() => {
+  const [admin, setAdmin] = useState<AdminUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize auth state from sessionStorage on mount
+  useEffect(() => {
+    console.log('[AdminAuthContext] Initializing auth state');
     const stored = sessionStorage.getItem("adminSession");
-    return stored ? JSON.parse(stored) : null;
-  });
+    
+    if (stored) {
+      try {
+        const adminData = JSON.parse(stored);
+        console.log('[AdminAuthContext] Found stored session:', adminData);
+        setAdmin(adminData);
+      } catch (error) {
+        console.error('[AdminAuthContext] Error parsing stored session:', error);
+        sessionStorage.removeItem("adminSession");
+      }
+    } else {
+      console.log('[AdminAuthContext] No stored session found');
+    }
+    
+    // Mark loading as complete
+    setTimeout(() => {
+      setIsLoading(false);
+      console.log('[AdminAuthContext] Auth initialization complete');
+    }, 100);
+  }, []);
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
+      console.log('[AdminAuth] Starting login for:', username);
+      
       // Demo credentials check - allows offline access
       if (username === "admin@sentinel.com" && password === "admin123") {
+        console.log('[AdminAuth] Demo credentials detected');
         const adminData: AdminUser = {
           username: "admin@sentinel.com",
           adminId: "demo-admin",
           token: "demo-token-" + Date.now(),
         };
 
+        console.log('[AdminAuth] Setting admin state:', adminData);
         setAdmin(adminData);
         sessionStorage.setItem("adminSession", JSON.stringify(adminData));
+        console.log('[AdminAuth] Session saved to sessionStorage');
+        
+        // Small delay to ensure state updates
+        await new Promise(resolve => setTimeout(resolve, 150));
+        console.log('[AdminAuth] Demo login successful');
         return true;
       }
 
       // Fall back to API authentication for other credentials
+      console.log('[AdminAuth] Attempting API authentication');
       const response = await adminApiClient.post<LoginResponse>(
         ADMIN_API_ENDPOINTS.AUTH.LOGIN,
         { email: username, password }
       );
 
+      console.log('[AdminAuth] API response received:', response.data);
+
       const adminData: AdminUser = {
-        username: response.data.user?.email || username,
-        adminId: response.data.user?.email || username,
+        username: response.data.admin.email,
+        adminId: response.data.admin.id,
         token: response.data.token,
       };
 
+      console.log('[AdminAuth] Setting admin state:', adminData);
       setAdmin(adminData);
       sessionStorage.setItem("adminSession", JSON.stringify(adminData));
+      
+      // Small delay to ensure state updates
+      await new Promise(resolve => setTimeout(resolve, 150));
+      console.log('[AdminAuth] API login successful');
       return true;
     } catch (error: any) {
-      console.error('Admin login error:', error);
+      console.error('[AdminAuth] Login error:', error);
       return false;
     }
   }, []);
@@ -82,6 +125,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       value={{
         admin,
         isAuthenticated: !!admin,
+        isLoading,
         login,
         logout,
       }}

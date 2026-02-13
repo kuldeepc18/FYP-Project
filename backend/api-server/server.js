@@ -57,6 +57,25 @@ app.use((req, res, next) => {
   next();
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    name: 'KTrade API Server',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      userAuth: '/api/auth/*',
+      market: '/api/market/*',
+      orders: '/api/orders/*',
+      portfolio: '/api/portfolio/*',
+      adminAuth: '/api/admin/auth/*',
+      adminPanel: '/api/admin/*'
+    },
+    documentation: 'See README.md for full API documentation'
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

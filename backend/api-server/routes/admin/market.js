@@ -34,4 +34,19 @@ router.get('/data', authenticateAdmin, (req, res) => {
   }
 });
 
+// Get market data from database (historical)
+router.get('/database', authenticateAdmin, async (req, res) => {
+  try {
+    const { symbol, limit } = req.query;
+    const data = await marketService.getMarketDataFromDatabase(
+      symbol || null, 
+      limit ? parseInt(limit) : 100
+    );
+    res.json(data);
+  } catch (error) {
+    logger.error('Get database market data error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

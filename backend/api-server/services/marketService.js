@@ -25,8 +25,39 @@ export const INSTRUMENTS = [
 // In-memory market data store (simulated real-time prices)
 let marketData = {};
 
+// Save market data to QuestDB
+async function saveMarketDataToDatabase() {
+  try {
+    const quotes = getAllQuotes();
+    
+    for (const quote of quotes) {
+      await query(
+        `INSERT INTO market_data (
+          symbol, price, change, change_percent, volume,
+          high, low, open, previous_close, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())`,
+        [
+          quote.symbol,
+          quote.price,
+          quote.change,
+          quote.changePercent,
+          quote.volume,
+          quote.high,
+          quote.low,
+          quote.open,
+          quote.previousClose
+        ]
+      );
+    }
+    
+    logger.debug(`Saved ${quotes.length} market data records to database`);
+  } catch (error) {
+    logger.error('Error saving market data to database:', error.message);
+  }
+}
+
 // Initialize market data
-export function initializeMarketData() {
+export async function initializeMarketData() {
   INSTRUMENTS.forEach(instrument => {
     const volatility = Math.random() * 0.02; // 0-2% volatility
     const change = (Math.random() - 0.5) * volatility * 2;
@@ -54,6 +85,9 @@ export function initializeMarketData() {
   });
   
   logger.info('Market data initialized for ' + INSTRUMENTS.length + ' instruments');
+  
+  // Save initial data to database
+  await saveMarketDataToDatabase();
 }
 
 // Update market data (simulated real-time updates)
@@ -193,12 +227,59 @@ export function getMarketStatistics() {
   };
 }
 
+// Get market data from database (for historical queries)
+export async function getMarketDataFromDatabase(symbol = null, limit = 100) {
+  try {
+    let queryText;
+    let params;
+    
+    if (symbol) {
+      queryText = `
+        SELECT symbol, price, change, change_percent, volume, high, low, open, previous_close, updated_at
+        FROM market_data
+        WHERE symbol = $1
+        ORDER BY updated_at DESC
+        LIMIT $2
+      `;
+      params = [symbol, limit];
+    } else {
+      // Get latest data for each symbol
+      queryText = `
+        SELECT symbol, price, change, change_percent, volume, high, low, open, previous_close, updated_at
+        FROM (
+          SELECT *, ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY updated_at DESC) as rn
+          FROM market_data
+        ) WHERE rn = 1
+        ORDER BY symbol
+      `;
+      params = [];
+    }
+    
+    const result = await query(queryText, params);
+    return result.rows;
+  } catch (error) {
+    logger.error('Error fetching market data from database:', error.message);
+    return [];
+  }
+}
+
 // Start market data updates (every 2 seconds)
 export function startMarketDataUpdates(io) {
   initializeMarketData();
   
+  // Save to database every 10 seconds (not every 2 seconds to avoid overload)
+  let updateCounter = 0;
+  
   setInterval(() => {
     updateMarketData();
+    updateCounter++;
+    
+    // Save to database every 5 updates (10 seconds)
+    if (updateCounter % 5 === 0) {
+      saveMarketDataToDatabase().catch(err => {
+        logger.error('Failed to save market data to database:', err);
+      });
+    }
     
     // Broadcast to WebSocket clients
     if (io) {
@@ -212,5 +293,5 @@ export function startMarketDataUpdates(io) {
     }
   }, 2000); // Update every 2 seconds
   
-  logger.info('Market data updates started');
+  logger.info('Market data updates started (saving to database every 10 seconds)');
 }

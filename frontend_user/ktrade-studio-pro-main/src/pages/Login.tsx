@@ -21,14 +21,23 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting login with:', email);
+      console.log('[Login] Attempting login with:', email);
       const authState = await authService.login(email, password);
-      console.log('Login successful:', authState);
+      console.log('[Login] Login successful:', authState);
+      
+      // Dispatch to Redux
       dispatch(setAuth(authState));
+      console.log('[Login] Auth state dispatched to Redux');
+      
       toast.success('Login successful!');
-      navigate('/');
+      
+      // Small delay to ensure state is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('[Login] Navigating to home page');
+      navigate('/', { replace: true });
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('[Login] Login error:', error);
       toast.error(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);

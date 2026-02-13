@@ -24,14 +24,29 @@ export default function AdminLogin() {
     setError("");
     setIsLoading(true);
 
+    console.log('[AdminLogin] Form submitted, attempting login');
+    console.log('[AdminLogin] Username:', username);
+    console.log('[AdminLogin] Password length:', password.length);
+
     try {
       const success = await login(username, password);
+      console.log('[AdminLogin] Login function returned:', success);
+      
       if (success) {
+        console.log('[AdminLogin] Login successful!');
+        console.log('[AdminLogin] Waiting for state to update...');
+        
+        // Give React time to update the authentication state
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        console.log('[AdminLogin] Navigating to:', from);
         navigate(from, { replace: true });
       } else {
+        console.error('[AdminLogin] Login failed: Invalid credentials');
         setError("Invalid credentials. Access denied.");
       }
-    } catch {
+    } catch (error) {
+      console.error('[AdminLogin] Login error:', error);
       setError("Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);

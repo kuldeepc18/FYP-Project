@@ -1,4 +1,4 @@
-import { adminApiClient, ADMIN_API_ENDPOINTS } from '@/config/api';
+import axios from "axios";import { adminApiClient, ADMIN_API_ENDPOINTS } from '@/config/api';
 
 export interface MarketInstrument {
   symbol: string;
@@ -49,17 +49,18 @@ export interface SurveillanceAlert {
 // Fetch market data from backend API
 export async function getMarketInstruments(): Promise<MarketInstrument[]> {
   try {
-    const response = await adminApiClient.get(ADMIN_API_ENDPOINTS.MARKET.SYMBOLS);
+    // Use public market quotes endpoint which has full data
+    const response = await axios.get('http://localhost:3000/api/market/quotes');
     return response.data.map((inst: any) => ({
       symbol: inst.symbol,
       name: inst.name,
-      lastPrice: inst.marketPrice || 0,
+      lastPrice: inst.price || 0,
       change: inst.change || 0,
       changePercent: inst.changePercent || 0,
-      volume: Math.floor(Math.random() * 10000000), // Backend doesn't provide volume yet
-      high24h: inst.marketPrice * 1.02,
-      low24h: inst.marketPrice * 0.98,
-      timestamp: new Date().toISOString(),
+      volume: inst.volume || 0,
+      high24h: inst.high || inst.price * 1.02,
+      low24h: inst.low || inst.price * 0.98,
+      timestamp: inst.lastUpdated || new Date().toISOString(),
     }));
   } catch (error) {
     console.error('Failed to fetch market instruments:', error);
@@ -75,10 +76,10 @@ export async function getOrderBook(symbol?: string): Promise<OrderBookEntry[]> {
       id: order.id || `order-${index}`,
       symbol: order.symbol,
       side: order.side === 'BUY' ? 'BID' : 'ASK',
-      price: order.price,
-      quantity: order.quantity,
-      total: order.price * order.quantity,
-      timestamp: new Date(order.timestamp).toISOString(),
+      price: order.price || 0,
+      quantity: order.quantity || 0,
+      total: (order.price || 0) * (order.quantity || 0),
+      timestamp: order.created_at ? new Date(order.created_at).toISOString() : new Date().toISOString(),
       source: 'MARKET',
     }));
   } catch (error) {
@@ -94,13 +95,13 @@ export async function getTradeHistory(): Promise<TradeRecord[]> {
     return response.data.map((trade: any) => ({
       id: trade.id,
       symbol: trade.symbol,
-      side: trade.side,
-      price: trade.price,
-      quantity: trade.quantity,
-      total: trade.price * trade.quantity,
-      maker: trade.userId || 'User',
-      taker: 'Market',
-      timestamp: new Date(trade.timestamp).toISOString(),
+      side: trade.buyer_user_id ? 'BUY' : 'SELL',
+      price: trade.price || 0,
+      quantity: trade.quantity || 0,
+      total: (trade.price || 0) * (trade.quantity || 0),
+      maker: trade.buyer_user_id || 'User',
+      taker: trade.seller_user_id || 'Market',
+      timestamp: trade.executed_at ? new Date(trade.executed_at).toISOString() : new Date().toISOString(),
       source: 'MARKET',
     }));
   } catch (error) {
