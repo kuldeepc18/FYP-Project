@@ -73,7 +73,7 @@ Access at: http://localhost:5173
 cd frontend_admin/sentinel-console-main
 npm run dev
 ```
-Access at: http://localhost:5174
+Access at: http://localhost:8080
 
 ---
 
