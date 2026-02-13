@@ -484,12 +484,14 @@ tail -f logs/combined.log
    cd frontend_user/ktrade-studio-pro-main
    npm run dev
    ```
+   Access at: http://localhost:8080
 
 3. **Start the admin frontend**:
    ```bash
    cd frontend_admin/sentinel-console-main
    npm run dev
    ```
+   Access at: http://localhost:5174
 
 ### For Production:
 

@@ -453,7 +453,7 @@ cd backend/api-server
 ```
 
 Then open:
-- User UI: http://localhost:5173
+- User UI: http://localhost:8080
 - Admin UI: http://localhost:5174
 
 ---

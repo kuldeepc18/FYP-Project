@@ -66,25 +66,28 @@ The server will start on: http://localhost:3000
 cd frontend_user/ktrade-studio-pro-main
 npm run dev
 ```
-Access at: http://localhost:5173
+Access at: http://localhost:8080
 
 **Admin Frontend:**
 ```bash
 cd frontend_admin/sentinel-console-main
 npm run dev
 ```
-Access at: http://localhost:8080
+Access at: http://localhost:5174
 
 ---
 
 ## 🔑 Default Credentials
 
-### Admin Panel Login
+### Admin Panel Login (Admin Frontend Only)
 - **Email**: `admin@sentinel.com`
 - **Password**: `admin123`
+- **Note**: Use these ONLY on the Admin Panel at http://localhost:5174
 
-### User Registration
-Create a new account through the frontend or API:
+### User Frontend Login
+**You must register a new account first!** Admin credentials won't work on the user frontend.
+
+Create a new account through the user frontend or API:
 ```bash
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -106,7 +109,7 @@ New users get ₹50,00,000 starting balance.
 | API Server | http://localhost:3000 | REST API endpoints |
 | WebSocket | ws://localhost:3000 | Real-time data stream |
 | QuestDB Console | http://localhost:9000 | Database web interface |
-| User Frontend | http://localhost:5173 | Trading interface |
+| User Frontend | http://localhost:8080 | Trading interface |
 | Admin Frontend | http://localhost:5174 | Admin console |
 
 ---
